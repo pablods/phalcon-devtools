@@ -182,11 +182,14 @@ class Migration
                     $fieldDefinition[] = "'type' => Column::TYPE_TEXT";
                     break;
                 case Column::TYPE_BOOLEAN:
-                                        $fieldDefinition[] = "'type' => Column::TYPE_BOOLEAN";
-                                        break;
-                                case Column::TYPE_FLOAT:
-                                        $fieldDefinition[] = "'type' => Column::TYPE_FLOAT";
-                                        break;
+                        $fieldDefinition[] = "'type' => Column::TYPE_BOOLEAN";
+                        break;
+                case Column::TYPE_FLOAT:
+                        $fieldDefinition[] = "'type' => Column::TYPE_FLOAT";
+                        break;
+                case Column::TYPE_DOUBLE:
+                    $fieldDefinition[] = "'type' => Column::TYPE_DOUBLE";
+                    break;
 
                 default:
                     throw new Exception('Unrecognized data type ' . $field->getType() . ' at column ' . $field->getName());
