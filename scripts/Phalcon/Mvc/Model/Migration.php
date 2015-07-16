@@ -20,7 +20,10 @@
 
 namespace Phalcon\Mvc\Model;
 
+use Phalcon\Db\Adapter\Cacheable\Mysql;
+use Phalcon\Db\Adapter\Mongo\Db;
 use Phalcon\Db\Column;
+use Phalcon\Migrations;
 use Phalcon\Mvc\Model\Migration\Profiler;
 use Phalcon\Mvc\Model\Exception;
 use Phalcon\Events\Manager as EventsManager;
@@ -72,7 +75,11 @@ class Migration
         if ( ! isset($database->adapter))
             throw new \Phalcon\Exception('Unspecified database Adapter in your configuration!');
 
-        $adapter = '\\Phalcon\\Db\\Adapter\\Pdo\\' . $database->adapter;
+        if($database->adapter == 'Mysql'){
+            $adapter = '\\Phalcon\\Db\\Adapter\\Pdo\\MysqlExtended';
+        }else{
+            $adapter = '\\Phalcon\\Db\\Adapter\\Pdo\\' . $database->adapter;
+        }
 
         if ( ! class_exists($adapter))
             throw new \Phalcon\Exception('Invalid database Adapter!');
@@ -126,6 +133,21 @@ class Migration
         return $classDefinition;
     }
 
+
+
+    public static function fullDescribe($table, $defaultSchema){
+        $describe = self::$_connection->query("DESCRIBE `$defaultSchema`.`$table`");
+        $describe->setFetchMode(\Phalcon\Db::FETCH_ASSOC);
+        $result_set = $describe->fetchAll();
+        $fullDesc = [];
+        $params = null;
+        foreach($result_set as $col){
+            $fullDesc[$col['Field']] = $col;
+        }
+        return $fullDesc;
+    }
+
+
     /**
      * Generate specified table migration
      *
@@ -155,8 +177,11 @@ class Migration
                 }
 
         $description = self::$_connection->describeColumns($table, $defaultSchema);
+        $fullDesc = self::fullDescribe($table, $defaultSchema);
+
         foreach ($description as $field) {
             $fieldDefinition = array();
+
             switch ($field->getType()) {
                 case Column::TYPE_INTEGER:
                     $fieldDefinition[] = "'type' => Column::TYPE_INTEGER";
@@ -188,7 +213,7 @@ class Migration
                         $fieldDefinition[] = "'type' => Column::TYPE_FLOAT";
                         break;
                 case Column::TYPE_DOUBLE:
-                    $fieldDefinition[] = "'type' => Column::TYPE_DOUBLE";
+                    $fieldDefinition[] = "'type' => Column::TYPE_FLOAT";
                     break;
 
                 default:
@@ -198,6 +223,11 @@ class Migration
             //if ($field->isPrimary()) {
             //	$fieldDefinition[] = "'primary' => true";
             //}
+
+            if($fullDesc[$field->getName()]['Default']){
+                $fieldDefinition[] = "'default' => '".$fullDesc[$field->getName()]['Default']."'";
+            }
+
 
             if ($field->isUnsigned()) {
                 $fieldDefinition[] = "'unsigned' => true";
@@ -226,6 +256,9 @@ class Migration
             } else {
                 $fieldDefinition[] = "'first' => true";
             }
+
+            $fieldDefinition[] = "'mysql_type' => '".addcslashes($fullDesc[$field->getName()]['Type'],"'")."'";
+
 
             $oldColumn = $field->getName();
             $tableDefinition[] = "\t\t\t\tnew Column(\n\t\t\t\t\t'" . $field->getName() . "',\n\t\t\t\t\tarray(\n\t\t\t\t\t\t" . join(",\n\t\t\t\t\t\t", $fieldDefinition) . "\n\t\t\t\t\t)\n\t\t\t\t)";
@@ -273,7 +306,7 @@ class Migration
 
         $classVersion = preg_replace('/[^0-9A-Za-z]/', '', $version);
         $className = \Phalcon\Text::camelize($table) . 'Migration_'.$classVersion;
-        $classData = "use Phalcon\\Db\\Column;
+        $classData = "use Phalcon\\Mvc\\Model\\Column;
 use Phalcon\\Db\\Index;
 use Phalcon\\Db\\Reference;
 use Phalcon\\Mvc\\Model\\Migration;
@@ -365,6 +398,17 @@ class ".$className." extends Migration\n".
         }
     }
 
+
+    public function parseMysqlType($mysql_type){
+        preg_match('/(.+)\(([0-9A-Za-z\-_\',])+\)/',$mysql_type,$m);
+        if(count($m)==3){
+            return $m[1];
+        }
+        return $mysql_type;
+    }
+
+
+
     /**
      * Look for table definition modifications and apply to real table
      *
@@ -390,10 +434,11 @@ class ".$className." extends Migration\n".
             }
 
             $fields = array();
-            foreach ($definition['columns'] as $tableColumn) {
+            foreach ($definition['columns'] as $i => $tableColumn) {
                 if (!is_object($tableColumn)) {
                     throw new Exception('Table must have at least one column');
                 }
+
                 $fields[$tableColumn->getName()] = $tableColumn;
             }
 
@@ -401,11 +446,14 @@ class ".$className." extends Migration\n".
 
                 $localFields = array();
                 $description = self::$_connection->describeColumns($tableName, $defaultSchema);
+                $fullDesc = self::fullDescribe($tableName, $defaultSchema);
+
                 foreach ($description as $field) {
                     $localFields[$field->getName()] = $field;
                 }
 
                 foreach ($fields as $fieldName => $tableColumn) {
+
                     if (!isset($localFields[$fieldName])) {
                         self::$_connection->addColumn($tableName, $tableColumn->getSchemaName(), $tableColumn);
                     } else {
@@ -420,9 +468,17 @@ class ".$className." extends Migration\n".
                             $changed = true;
                         }
 
+
+
+                        if($tableColumn->getDefault() !== null && $tableColumn->getDefault() != $fullDesc[$fieldName]['Default']){
+                            $changed = true;
+                        }
+
+
                         if ($changed == true) {
                             self::$_connection->modifyColumn($tableName, $tableColumn->getSchemaName(), $tableColumn);
                         }
+
                     }
                 }
 

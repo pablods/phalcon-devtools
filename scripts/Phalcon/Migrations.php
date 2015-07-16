@@ -163,6 +163,7 @@ class Migrations
         $migrationFid = $path.'.phalcon/migration-version';
         if (file_exists($migrationFid)) {
             $fromVersion = file_get_contents($migrationFid);
+            $fromVersion = trim($fromVersion);
         } else {
             $fromVersion = (string) $version;
         }
