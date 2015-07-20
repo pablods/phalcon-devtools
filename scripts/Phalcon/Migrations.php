@@ -160,13 +160,28 @@ class Migrations
             mkdir($path.'.phalcon');
         }
 
+
+
+
+
+
         $migrationFid = $path.'.phalcon/migration-version';
         if (file_exists($migrationFid)) {
-            $fromVersion = file_get_contents($migrationFid);
-            $fromVersion = trim($fromVersion);
+            $lastVersion = file_get_contents($migrationFid);
+            $lastVersion = trim($lastVersion);
+
+            $nextVersion = new VersionItem($lastVersion);
+            $nextVersion = $nextVersion->addMinor(1);
+            $fromVersion = $nextVersion;
         } else {
-            $fromVersion = (string) $version;
+            $fromVersion = (string) VersionItem::minimum($versions);;
         }
+
+
+        if($fromVersion > $version){
+            throw new \Exception("$fromVersion does not exist");
+        }
+
 
         if (isset($config->database)) {
             ModelMigration::setup($config->database);

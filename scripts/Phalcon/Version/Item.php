@@ -134,6 +134,22 @@ class Item
     }
 
     /**
+     * @param $versions Item[]
+     *
+     * @return \Phalcon\Version\Item
+     */
+    public static function minimum($versions)
+    {
+        if (count($versions) == 0) {
+            return null;
+        } else {
+            $versions = self::sortAsc($versions);
+
+            return $versions[0];
+        }
+    }
+
+    /**
      * Allows to check whether a version is in a range between two values.
      *
      * @param  string  $initialVersion
