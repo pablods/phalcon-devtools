@@ -20,6 +20,7 @@
 
 namespace Phalcon;
 
+use Phalcon\Mvc\Model\Column;
 use Phalcon\Script\Color;
 use Phalcon\Version\Item as VersionItem;
 use Phalcon\Mvc\Model\Migration as ModelMigration;
@@ -135,6 +136,14 @@ class Migrations
             $tableName = 'all';
         }
 
+
+        if(isset($options['migrationTable'])){
+            $migrationTable = $options['migrationTable'];
+        } else {
+            $migrationTable = 'migration';
+        }
+
+
         if (!file_exists($migrationsDir)) {
             throw new \Phalcon\Mvc\Model\Exception('Migrations directory could not found');
         }
@@ -162,12 +171,23 @@ class Migrations
 
 
 
+        if (isset($config->database)) {
+            ModelMigration::setup($config->database);
+        } else {
+            throw new \Exception("Cannot load database configuration");
+        }
 
 
 
-        $migrationFid = $path.'.phalcon/migration-version';
-        if (file_exists($migrationFid)) {
-            $lastVersion = file_get_contents($migrationFid);
+        $db = ModelMigration::getDb();
+        $tableExists = $db->tableExists($migrationTable);
+        $result = false;
+        if($tableExists){
+            $result = $db->fetchOne("SELECT version FROM $migrationTable");
+        }
+
+        if ($result) {
+            $lastVersion = $result['version'];
             $lastVersion = trim($lastVersion);
 
             $nextVersion = new VersionItem($lastVersion);
@@ -183,11 +203,6 @@ class Migrations
         }
 
 
-        if (isset($config->database)) {
-            ModelMigration::setup($config->database);
-        } else {
-            throw new \Exception("Cannot load database configuration");
-        }
 
         ModelMigration::setMigrationPath($migrationsDir.'/'.$version);
         $versionsBetween = VersionItem::between($fromVersion, $version, $versions);
@@ -212,7 +227,41 @@ class Migrations
             print Color::success('Version '.$version.' was successfully migrated').PHP_EOL;
         }
 
-        file_put_contents($migrationFid, (string) $version);
+        if(!$tableExists){
+            $db->createTable($migrationTable, null, [
+                'columns' => [
+                    new Column(
+                        'version',
+                        array(
+                            'type' => Column::TYPE_VARCHAR,
+                            'notNull' => true,
+                            'size' => 5,
+                            'first' => 'true',
+                        )
+                    ),
+                    new Column(
+                        'created_at',
+                        array(
+                            'type' => Column::TYPE_DATETIME,
+                            'notNull' => true,
+                            'after' => 'version',
+                        )
+                    ),
+                    new Column(
+                        'last_update',
+                        array(
+                            'type' => Column::TYPE_DATETIME,
+                            'after' => 'created_at',
+                            'notNull' => true,
+                        )
+                    )
+                ]
+            ]);
+            $db->insert($migrationTable, [(string) $version,  date('Y-m-d H:i:s'), date('Y-m-d H:i:s')]);
+        }else{
+            $db->update($migrationTable, ['version', 'last_update'], [(string) $version,  date('Y-m-d H:i:s')]);
+        }
+
     }
 
 }

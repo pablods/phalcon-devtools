@@ -44,7 +44,7 @@ class Migration
     /**
      * Migration database connection
      *
-     * @var \Phalcon\Db
+     * @var \Phalcon\Db|\Phalcon\Db\Adapter\Pdo
      */
     protected static $_connection;
 
@@ -61,6 +61,15 @@ class Migration
      * @var string
      */
     private static $_migrationPath = null;
+
+
+    /**
+     * @return \Phalcon\Db|\Phalcon\Db\Adapter\Pdo
+     */
+    public static function getDb(){
+        return self::$_connection;
+    }
+
 
     /**
      * Prepares component
@@ -166,15 +175,15 @@ class Migration
         $numericFields = array();
         $tableDefinition = array();
 
-                if (isset(self::$_databaseConfig->schema)) {
-                        $defaultSchema = self::$_databaseConfig->schema;
-                } elseif (isset(self::$_databaseConfig->adapter) && self::$_databaseConfig->adapter == 'Postgresql') {
-                        $defaultSchema =  'public';
-                } elseif (isset(self::$_databaseConfig->dbname)) {
-                        $defaultSchema = self::$_databaseConfig->dbname;
-                } else {
-                        $defaultSchema = null;
-                }
+        if (isset(self::$_databaseConfig->schema)) {
+            $defaultSchema = self::$_databaseConfig->schema;
+        } elseif (isset(self::$_databaseConfig->adapter) && self::$_databaseConfig->adapter == 'Postgresql') {
+            $defaultSchema =  'public';
+        } elseif (isset(self::$_databaseConfig->dbname)) {
+            $defaultSchema = self::$_databaseConfig->dbname;
+        } else {
+            $defaultSchema = null;
+        }
 
         $description = self::$_connection->describeColumns($table, $defaultSchema);
         $fullDesc = self::fullDescribe($table, $defaultSchema);
@@ -200,18 +209,18 @@ class Migration
                     $fieldDefinition[] = "'type' => Column::TYPE_DATETIME";
                     break;
                 case Column::TYPE_DECIMAL:
-                        $fieldDefinition[] = "'type' => Column::TYPE_DECIMAL";
+                    $fieldDefinition[] = "'type' => Column::TYPE_DECIMAL";
                     $numericFields[$field->getName()] = true;
                     break;
                 case Column::TYPE_TEXT:
                     $fieldDefinition[] = "'type' => Column::TYPE_TEXT";
                     break;
                 case Column::TYPE_BOOLEAN:
-                        $fieldDefinition[] = "'type' => Column::TYPE_BOOLEAN";
-                        break;
+                    $fieldDefinition[] = "'type' => Column::TYPE_BOOLEAN";
+                    break;
                 case Column::TYPE_FLOAT:
-                        $fieldDefinition[] = "'type' => Column::TYPE_FLOAT";
-                        break;
+                    $fieldDefinition[] = "'type' => Column::TYPE_FLOAT";
+                    break;
                 case Column::TYPE_DOUBLE:
                     $fieldDefinition[] = "'type' => Column::TYPE_FLOAT";
                     break;
@@ -242,14 +251,14 @@ class Migration
             }
 
             if ($field->getSize()) {
-                        $fieldDefinition[] = "'size' => " . $field->getSize();
-                } else {
-                    $fieldDefinition[] = "'size' => 1";
-                }
+                $fieldDefinition[] = "'size' => " . $field->getSize();
+            } else {
+                $fieldDefinition[] = "'size' => 1";
+            }
 
-                        if ($field->getScale()) {
-                                $fieldDefinition[] = "'scale' => " . $field->getScale();
-                        }
+            if ($field->getScale()) {
+                $fieldDefinition[] = "'scale' => " . $field->getScale();
+            }
 
             if ($oldColumn != null) {
                 $fieldDefinition[] = "'after' => '" . $oldColumn . "'";
@@ -312,10 +321,10 @@ use Phalcon\\Db\\Reference;
 use Phalcon\\Mvc\\Model\\Migration;
 
 class ".$className." extends Migration\n".
-"{\n\n".
-        "\tpublic function up()\n".
-        "\t{\n\t\t\$this->morphTable(\n\t\t\t'" . $table . "',\n\t\t\tarray(" .
-        "\n\t\t\t'columns' => array(\n" . join(",\n", $tableDefinition) . "\n\t\t\t),";
+            "{\n\n".
+            "\tpublic function up()\n".
+            "\t{\n\t\t\$this->morphTable(\n\t\t\t'" . $table . "',\n\t\t\tarray(" .
+            "\n\t\t\t'columns' => array(\n" . join(",\n", $tableDefinition) . "\n\t\t\t),";
         if (count($indexesDefinition)) {
             $classData .= "\n\t\t\t'indexes' => array(\n" . join(",\n", $indexesDefinition) . "\n\t\t\t),";
         }
