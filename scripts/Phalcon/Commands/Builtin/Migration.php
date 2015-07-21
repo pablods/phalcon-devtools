@@ -48,6 +48,11 @@ class Migration extends Command implements CommandsInterface
         'table=s' 		=> "Table to migrate. Default: all.",
         'version=s' 	=> "Version to migrate.",
         'force' 		=> "Forces to overwrite existing migrations.",
+        'db=s' 		    => "Database Adaptater. Eg: Mysql.  If specified overight configuration.",
+        'host=s' 	    => "Database Host.",
+        'username=s' 	=> "Database username.",
+        'password=s'    => "Database passsword.",
+        'dbname=s'      => "Database dbname.",
     );
 
     /**
@@ -138,12 +143,48 @@ class Migration extends Command implements CommandsInterface
         $exportData = $this->getOption('data');
         $originalVersion = $this->getOption('version');
 
-        if ($this->isReceivedOption('config')) {
-            $configPath = $path . $this->getOption('config');
-            $config = $this->_loadConfig($configPath);
-        } else {
-            $config = $this->_getConfig($path);
+
+
+        if($this->isReceivedOption('db')){
+            $db = $this->getOption('db');
+            $host = $this->getOption('host');
+            if(!$host){
+                throw new Builder\BuilderException('Missing db host parameter. Use --host.');
+            }
+            $username = $this->getOption('username');
+            if(!$username){
+                throw new Builder\BuilderException('Missing db username parameter. Use --username.');
+            }
+            $password = $this->getOption('password');
+            if(!$password){
+                throw new Builder\BuilderException('Missing db password parameter. Use --password.');
+            }
+            $dbname = $this->getOption('dbname');
+            if(!$dbname){
+                throw new Builder\BuilderException('Missing db name parameter. Use --dbname.');
+            }
+            $config = new \Phalcon\Config(array(
+                'database' => array(
+                    'adapter'     => $db,
+                    "host" => $host,
+                    "username" => $username,
+                    "password" => $password,
+                    "dbname" => $dbname
+                )
+            ));
         }
+
+
+
+        if(!$config){
+            if ($this->isReceivedOption('config')) {
+                $configPath = $path . $this->getOption('config');
+                $config = $this->_loadConfig($configPath);
+            } else {
+                $config = $this->_getConfig($path);
+            }
+        }
+
 
         $action = $this->getOption(array('action', 1));
 
