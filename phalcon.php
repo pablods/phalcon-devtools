@@ -88,6 +88,7 @@ try {
     } else {
         print 'ERROR: ' . $e->getMessage() . PHP_EOL;
     }
+    exit(1);
 
 } catch (Exception $e) {
     if ($extensionLoaded) {
@@ -95,4 +96,5 @@ try {
     } else {
         print 'ERROR: ' . $e->getMessage() . PHP_EOL;
     }
+    exit(1);
 }

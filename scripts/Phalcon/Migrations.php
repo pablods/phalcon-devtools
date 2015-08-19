@@ -199,7 +199,8 @@ class Migrations
 
 
         if($fromVersion > $version){
-            throw new \Exception("$fromVersion does not exist");
+            Color::info("$fromVersion does not exist");
+            return;
         }
 
 
