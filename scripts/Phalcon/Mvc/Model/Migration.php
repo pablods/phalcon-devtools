@@ -70,6 +70,13 @@ class Migration
         return self::$_connection;
     }
 
+    /**
+     * @return string
+     */
+    public static function getDbName(){
+        return self::$_databaseConfig->dbname;
+    }
+
 
     /**
      * Prepares component
