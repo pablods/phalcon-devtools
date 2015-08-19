@@ -144,7 +144,7 @@ class Migration extends Command implements CommandsInterface
         $originalVersion = $this->getOption('version');
 
 
-
+        $config = null;
         if($this->isReceivedOption('db')){
             $db = $this->getOption('db');
             $host = $this->getOption('host');

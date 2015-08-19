@@ -199,7 +199,7 @@ class Migrations
 
 
         if($fromVersion > $version){
-            Color::info("$fromVersion does not exist");
+            print  Color::info("$fromVersion does not exist"). PHP_EOL;
             return;
         }
 
