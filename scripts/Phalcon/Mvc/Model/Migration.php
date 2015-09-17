@@ -480,10 +480,13 @@ class ".$className." extends Migration\n".
                             $changed = true;
                         }
 
-                        if ($tableColumn->isNotNull() != $localFields[$fieldName]->isNotNull()) {
+                        if($tableColumn->getMysqlType() && $tableColumn->getMysqlType() != $fullDesc[$fieldName]['Type']){
                             $changed = true;
                         }
 
+                        if ($tableColumn->isNotNull() != $localFields[$fieldName]->isNotNull()) {
+                            $changed = true;
+                        }
 
 
                         if($tableColumn->getDefault() !== null && $tableColumn->getDefault() != $fullDesc[$fieldName]['Default']){
