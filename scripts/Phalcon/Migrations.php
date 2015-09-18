@@ -226,42 +226,44 @@ class Migrations
                 }
             }
             print Color::success('Version '.$version.' was successfully migrated').PHP_EOL;
+
+            if(!$tableExists){
+                $db->createTable($migrationTable, null, [
+                    'columns' => [
+                        new Column(
+                            'version',
+                            array(
+                                'type' => Column::TYPE_VARCHAR,
+                                'notNull' => true,
+                                'size' => 5,
+                                'first' => 'true',
+                            )
+                        ),
+                        new Column(
+                            'created_at',
+                            array(
+                                'type' => Column::TYPE_DATETIME,
+                                'notNull' => true,
+                                'after' => 'version',
+                            )
+                        ),
+                        new Column(
+                            'last_update',
+                            array(
+                                'type' => Column::TYPE_DATETIME,
+                                'after' => 'created_at',
+                                'notNull' => true,
+                            )
+                        )
+                    ]
+                ]);
+                $db->insert($migrationTable, [(string) $version,  date('Y-m-d H:i:s'), date('Y-m-d H:i:s')]);
+            }else{
+                $db->update($migrationTable, ['version', 'last_update'], [(string) $version,  date('Y-m-d H:i:s')]);
+            }
         }
 
-        if(!$tableExists){
-            $db->createTable($migrationTable, null, [
-                'columns' => [
-                    new Column(
-                        'version',
-                        array(
-                            'type' => Column::TYPE_VARCHAR,
-                            'notNull' => true,
-                            'size' => 5,
-                            'first' => 'true',
-                        )
-                    ),
-                    new Column(
-                        'created_at',
-                        array(
-                            'type' => Column::TYPE_DATETIME,
-                            'notNull' => true,
-                            'after' => 'version',
-                        )
-                    ),
-                    new Column(
-                        'last_update',
-                        array(
-                            'type' => Column::TYPE_DATETIME,
-                            'after' => 'created_at',
-                            'notNull' => true,
-                        )
-                    )
-                ]
-            ]);
-            $db->insert($migrationTable, [(string) $version,  date('Y-m-d H:i:s'), date('Y-m-d H:i:s')]);
-        }else{
-            $db->update($migrationTable, ['version', 'last_update'], [(string) $version,  date('Y-m-d H:i:s')]);
-        }
+
 
     }
 
