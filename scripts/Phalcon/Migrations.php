@@ -227,6 +227,7 @@ class Migrations
             }
             print Color::success('Version '.$version.' was successfully migrated').PHP_EOL;
 
+            $tableExists = $db->tableExists($migrationTable);
             if(!$tableExists){
                 $db->createTable($migrationTable, null, [
                     'columns' => [
